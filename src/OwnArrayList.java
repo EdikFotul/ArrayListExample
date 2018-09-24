@@ -60,7 +60,9 @@ public class OwnArrayList<T> implements List<T> {
         checkIsFullArray();
         //check is empty slot
 
-        System.arraycopy(basicDataArray, index, basicDataArray, index + 1, size - index);//bugaga
+        if (basicDataArray[index] != null) {
+            System.arraycopy(basicDataArray, index, basicDataArray, index + 1, size - index);//bugaga
+        }
         basicDataArray[index] = element;
         this.size++;
     }
@@ -95,7 +97,7 @@ public class OwnArrayList<T> implements List<T> {
     public boolean remove(Object o) {
         for (int arrayIndex = 0; arrayIndex < size; arrayIndex++) {
             if (o.equals(basicDataArray[arrayIndex])) {
-                System.arraycopy(basicDataArray, arrayIndex + 1/*if last then IndexOutOfBouns*/, basicDataArray, arrayIndex, size - arrayIndex);//bugaga again lol)
+                System.arraycopy(basicDataArray, arrayIndex + 1/*if last then IndexOutOfBouns*/, basicDataArray, arrayIndex, size - arrayIndex - 1);//bugaga again lol)
                 this.size--;
                 return true;
             }
@@ -108,7 +110,7 @@ public class OwnArrayList<T> implements List<T> {
     public T remove(int index) {
         checkIndex(index);
 
-        System.arraycopy(basicDataArray, index + 1, basicDataArray, index, size - index);//the same as above
+        System.arraycopy(basicDataArray, index + 1, basicDataArray, index, size - index - 1);//the same as above
         this.size--;
         return (T) basicDataArray[index];
     }
@@ -126,7 +128,7 @@ public class OwnArrayList<T> implements List<T> {
     @Override
     public int lastIndexOf(Object o) {
         int lastIndex = -1;
-        for (int arrayIndex = 0; arrayIndex < size; arrayIndex++) {//get start from end
+        for (int arrayIndex = size; arrayIndex > 0; arrayIndex--) {//get start from end
             if (o.equals(basicDataArray[arrayIndex])) {
                 lastIndex = arrayIndex;
             }
@@ -135,13 +137,12 @@ public class OwnArrayList<T> implements List<T> {
     }
 
 
-
     @Override
     public Iterator<T> iterator() {
         return new Itr();
     }
 
-    private class Itr implements Iterator<T>{
+    private class Itr implements Iterator<T> {
         int cursor = 0;
 
         @Override
@@ -153,44 +154,78 @@ public class OwnArrayList<T> implements List<T> {
         @Override
         public T next() {
             int i = cursor;
-            if (i >= size){
+            if (i >= size) {
                 throw new NoSuchElementException();
             }
             Object[] elements = OwnArrayList.this.basicDataArray;
-            if (i >= elements.length){
+            if (i >= elements.length) {
                 throw new ConcurrentModificationException();
             }
 
             cursor = i + 1;
-            return (T)(elements[i]);
+            return (T) (elements[i]);
         }
     }
 
-
+    @Override
+    public void clear() {
+        basicDataArray = new Object[BASIC_SIZE_OF_ARRAY];
+        size = 0;
+    }
 
     @Override
     public Object[] toArray() {
-        return new Object[0];
+        return basicDataArray;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        for (Object o : c) {
+            if (!contains(o)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void checkNewListCapacity(int newCollSize) {
+        if (newCollSize > basicDataArray.length) {
+            int i = 1;
+            while ((newCollSize % 10) != 0) {
+                newCollSize += i;
+            }
+            basicDataArray = Arrays.copyOf(basicDataArray, newCollSize);
+        }
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends T> c) {
+        Object[] arr = c.toArray();
+        int newCollectionSize = c.size() + OwnArrayList.this.size();
+
+        checkNewListCapacity(newCollectionSize);
+
+        System.arraycopy(arr, 0, basicDataArray, size, c.size());
+        this.size += c.size();
+        return true;
+    }
+
+    @Override
+    public boolean addAll(int index, Collection<? extends T> c) {
+        Object[] arr = c.toArray();
+        int newCollectionSize = c.size() + OwnArrayList.this.size();
+
+        checkNewListCapacity(newCollectionSize);
+
+        System.arraycopy(basicDataArray, index, basicDataArray, c.size() + index , OwnArrayList.this.size - index);
+        System.arraycopy(arr, 0, basicDataArray, index, c.size());
+        size += c.size();
+        return true;
     }
 
     @Override
     public <T1> T1[] toArray(T1[] a) {
         return null;
-    }
-
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends T> c) {
-        return false;
-    }
-
-    @Override
-    public boolean addAll(int index, Collection<? extends T> c) {
-        return false;
     }
 
     @Override
@@ -204,11 +239,6 @@ public class OwnArrayList<T> implements List<T> {
     }
 
     @Override
-    public void clear() {
-
-    }
-
-    @Override
     public boolean equals(Object o) {
         return false;
     }
@@ -218,8 +248,7 @@ public class OwnArrayList<T> implements List<T> {
         return 0;
     }
 
-
-    ////////////////////////
+    ///////////////////////////////////////
 
     @Override
     public ListIterator<T> listIterator() {
@@ -235,4 +264,5 @@ public class OwnArrayList<T> implements List<T> {
     public List<T> subList(int fromIndex, int toIndex) {
         return null;
     }
+
 }
